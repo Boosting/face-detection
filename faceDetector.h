@@ -38,7 +38,7 @@ namespace sk{
     void loadModel();
     void clusterRects(const std::vector< Rect<int> >& _src, std::vector< Rect<int> >& _dst);
 
-    std::vector< std::vector< haarClassifier > > haarclassifiers_;
+    std::vector< stageClassifier > haarclassifiers_;
 
   };
 }

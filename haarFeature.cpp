@@ -89,7 +89,7 @@ namespace sk{
     }
   }
 
-  void haarFeatureCalculator::detect(const std::vector< std::vector< haarClassifier > >& _hfc , 
+  void haarFeatureCalculator::detect(const std::vector< stageClassifier >& _hfc , 
     std::vector< Rect<int> >& _res)
   {
     const std::vector<int> window_sizes_ = { 24, 28, 33, 39,
@@ -129,29 +129,29 @@ namespace sk{
 
   bool haarFeatureCalculator::calcClassifierValue(
     const Rect<int>& _window,
-    const std::vector< std::vector< haarClassifier > >& _hfc)
+    const std::vector< stageClassifier >& _hfc)
   {
     for (size_t stage = 0; stage < _hfc.size(); stage++)
     {
       double sum = 0;
-      for (size_t f = 0; f < _hfc.at(stage).size(); f++)
+      for (size_t f = 0; f < _hfc.at(stage).classifiers.size(); f++)
       {
-        Rect<int> detect_wd(_hfc.at(stage).at(f).x * _window.width,
-          _hfc.at(stage).at(f).y * _window.height,
-          _hfc.at(stage).at(f).width * _window.width,
-          _hfc.at(stage).at(f).height * _window.height);
+        Rect<int> detect_wd(_hfc.at(stage).classifiers.at(f).x * _window.width,
+          _hfc.at(stage).classifiers.at(f).y * _window.height,
+          _hfc.at(stage).classifiers.at(f).width * _window.width,
+          _hfc.at(stage).classifiers.at(f).height * _window.height);
         detect_wd.x += _window.x;
         detect_wd.y += _window.y;
 
-        int p = _hfc.at(stage).at(f).p;
-        int type = _hfc.at(stage).at(f).type;
+        int p = _hfc.at(stage).classifiers.at(f).p;
+        int type = _hfc.at(stage).classifiers.at(f).type;
         double fx = p * getFeatureValue(detect_wd, type);
-        float th = p * _hfc.at(stage).at(f).th;
-        float alpha = _hfc.at(stage).at(f).weight;
+        float th = p * _hfc.at(stage).classifiers.at(f).th;
+        float alpha = _hfc.at(stage).classifiers.at(f).weight;
         if (fx > th) { sum += alpha; }
         else { sum -= alpha; }
       }
-      if (sum < 0) return false;
+      if (sum <= _hfc.at(stage).weight) return false;
     }
     return true;
   }

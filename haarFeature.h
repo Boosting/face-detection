@@ -30,6 +30,11 @@ namespace sk{
     float height;
   } haarClassifier;
 
+  typedef struct{
+    float weight;
+    std::vector< haarClassifier > classifiers;
+  } stageClassifier;
+
   class haarFeatureCalculator
   {
   public:
@@ -40,7 +45,7 @@ namespace sk{
     void setImage(int width, int height, const unsigned char* imgdata);
     void setImage(const unsigned char* imgdata);
     void getFeatureValues(std::vector<float>& _values, const std::vector< Rect<int> >& _rects, int _haar_type);
-    void haarFeatureCalculator::detect(const std::vector< std::vector< haarClassifier > >& _hfc, std::vector< Rect<int> >& _res);
+    void haarFeatureCalculator::detect(const std::vector< stageClassifier >& _hfc, std::vector< Rect<int> >& _res);
 
 
     void release();
@@ -58,7 +63,7 @@ namespace sk{
     double calcFeatureValue(const Rect<int>& rect, haarFunction& func);
     float getFeatureValue(const Rect<int>& _rects, int _method);
     bool calcClassifierValue(const Rect<int>& _window,
-      const std::vector< std::vector< haarClassifier > >& _hfc);
+      const std::vector< stageClassifier >& _hfc);
     std::vector< double > integral_image_;
   };
 

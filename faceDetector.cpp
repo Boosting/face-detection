@@ -21,8 +21,9 @@ namespace sk{
     bfr >> stage_num;
     for (size_t i = 0; i < stage_num; i++)
     {
-      std::vector< haarClassifier > tmp_classifier;
-      bfr >> tmp_classifier;
+      stageClassifier tmp_classifier;
+      bfr >> tmp_classifier.weight;
+      bfr >> tmp_classifier.classifiers;
       haarclassifiers_.push_back(tmp_classifier);
     }
   }
