@@ -43,7 +43,8 @@ namespace sk{
     bfw << stage_num;
     for (size_t i = 0; i < stage_num; i++)
     {
-      bfw << learned_classifiers_.at(i);
+      bfw << learned_classifiers_.at(i).weight;
+      bfw << learned_classifiers_.at(i).classifiers;
     }
   }
   
@@ -66,7 +67,10 @@ namespace sk{
       size_t feature_num = feature_values_.at(stage).size();
       size_t sample_num = y_.at(stage).size();
 
-      std::vector< haarClassifier > stage_classifies;
+      typedef struct { double Sp, Sn; } Sp_Sn;
+
+      stageClassifier stage_classifies;
+      std::vector< int > selected_funcs;
       std::vector< double > W(sample_num, 1. / sample_num);
 
       int iteration = param_.iteration;
@@ -91,7 +95,6 @@ namespace sk{
 
           // calc S+ list and S- list
 
-          typedef struct { double Sp, Sn; } Sp_Sn;
           std::vector< Sp_Sn > Sp_Sn_list(sample_num);
           if (y_.at(stage).at(sorted_val.at(0).idx) > 0) {
             Sp_Sn_list.at(0).Sp = W.at(sorted_val.at(0).idx);
@@ -168,7 +171,8 @@ namespace sk{
         tmp_classifier.th = best_param.th;
         tmp_classifier.type = feature_values_.at(stage).at(best_param.f).first.type;
         tmp_classifier.weight = alpha;
-        stage_classifies.push_back(tmp_classifier);
+        stage_classifies.classifiers.push_back(tmp_classifier);
+        selected_funcs.push_back(best_param.f);
 
         // update weights
 
@@ -189,6 +193,59 @@ namespace sk{
       } // iteration
 
       learned_classifiers_.push_back(stage_classifies);
+      std::vector<idx_fval> tmp_val(sample_num, { 0, 0 });
+      for (size_t i = 0; i < sample_num; i++)
+      {
+        tmp_val.at(i).idx = i;
+      }
+      for (size_t c = 0; c < selected_funcs.size(); c++)
+      {
+        for (size_t sn = 0; sn < sample_num; sn++)
+        {
+          double fx = feature_values_.at(stage).at(selected_funcs[c]).second.at(sn) *
+            stage_classifies.classifiers.at(c).p;
+          double th = stage_classifies.classifiers.at(c).p * stage_classifies.classifiers.at(c).th;
+          if (fx > th){
+            tmp_val.at(sn).val += stage_classifies.classifiers.at(c).weight;
+          }
+          else {
+            tmp_val.at(sn).val -= stage_classifies.classifiers.at(c).weight;
+          }
+        }
+      }
+      std::sort(tmp_val.begin(), tmp_val.end(), comp);
+      std::vector<Sp_Sn> spsn(sample_num, {0, 0});
+      if (y_.at(stage).at(tmp_val.front().idx) > 0){
+        spsn.front().Sp = 1;
+      }
+      else
+      {
+        spsn.front().Sn = 1;
+      }
+      for (size_t sn = 0; sn < sample_num; sn++)
+      {
+        if (y_.at(stage).at(tmp_val.at(sn).idx) > 0){
+          spsn.at(sn).Sp = spsn.at(sn - 1).Sp + 1;
+          spsn.at(sn).Sn = spsn.at(sn - 1).Sn;
+        }
+        else
+        {
+          spsn.at(sn).Sp = spsn.at(sn - 1).Sp;
+          spsn.at(sn).Sn = spsn.at(sn - 1).Sn + 1;
+        }
+      }
+      int Tp = spsn.back().Sp;
+      int Tn = spsn.back().Sn;
+      int best_sn = 0;
+      for (size_t sn = 0; sn < sample_num; sn++)
+      {
+        if (spsn.at(sn).Sp + Tn - spsn.at(sn).Sn <
+          spsn.at(best_sn).Sp + Tn - spsn.at(best_sn).Sn)
+        {
+          best_sn = sn;
+        }
+      }
+      stage_classifies.weight = tmp_val.at(best_sn).val;
 
     } // stage
     std::cout << std::endl;
